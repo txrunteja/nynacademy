@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, AlertCircle } from "lucide-react";
 import { supabase } from "../lib/supabase";
@@ -10,6 +10,21 @@ export function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Redirect if already authenticated or when auth state changes to signed-in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/dashboard", { replace: true });
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) navigate("/dashboard", { replace: true });
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -20,7 +35,7 @@ export function LoginPage() {
       setError(loginError.message);
       return;
     }
-    navigate("/dashboard");
+    // Navigation is handled by the onAuthStateChange listener above
   }
 
   return (
