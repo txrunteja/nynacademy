@@ -1,12 +1,21 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (p: number) => void;
+export interface PaginationProps {
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (p: number) => void;
+  /** Alias props used by some pages */
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  onChange?: (p: number) => void;
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export function Pagination(props: PaginationProps) {
+  const currentPage = props.currentPage ?? props.page ?? 1;
+  const totalPages = props.totalPages ?? (props.pageSize && props.total != null ? Math.max(1, Math.ceil(props.total / props.pageSize)) : 1);
+  const onPageChange = props.onPageChange ?? props.onChange ?? (() => {});
+
   if (totalPages <= 1) return null;
 
   return (

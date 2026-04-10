@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, differenceInMinutes } from "date-fns";
-import { CheckCircle2, XCircle, Clock, Edit3, GraduationCap, MapPin } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, GraduationCap, MapPin } from "lucide-react";
 import { getTodaySchedules, markSchedule, updateSchedule } from "../../api/schedules";
 
 const statusBadge: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {

@@ -28,12 +28,12 @@ export function AdminLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)] font-sans">
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-[#1e293b] bg-gradient-to-b from-[#0f172a] to-[#1e293b] shadow-2xl transition-transform md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-[#1f2937] bg-[#111827] shadow-2xl transition-transform md:static md:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full text-white">
-          <div className="p-6 border-b border-[#334155]">
+          <div className="p-6 border-b border-[#1f2937]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <span className="text-white font-bold text-xl tracking-tight">NYN</span>
@@ -70,7 +70,7 @@ export function AdminLayout() {
             })}
           </nav>
 
-          <div className="p-4 border-t border-[#334155] flex items-center justify-around bg-[#0f172a]/50">
+          <div className="p-4 border-t border-[#1f2937] flex items-center justify-around bg-[#0f172a]/40">
             <button 
               className={`Btn ${theme === "dark" ? "Btn-gray" : "Btn-dark"}`}
               onClick={toggleTheme}

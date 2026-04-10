@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Users, Globe, GraduationCap, AlertCircle, TrendingUp, Calendar } from "lucide-react";
+import { Users, GraduationCap, AlertCircle, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { TodayScheduleWidget } from "../components/schedule/TodayScheduleWidget";
