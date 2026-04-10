@@ -7,7 +7,10 @@ import "./index.css";
 import { applyTheme } from "./hooks/useTheme";
 
 const storedTheme = localStorage.getItem("nyn-theme");
-applyTheme(storedTheme === "dark" ? "dark" : storedTheme === "light" ? "light" : "light");
+const initialTheme = storedTheme === "dark" || storedTheme === "light"
+  ? storedTheme
+  : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+applyTheme(initialTheme);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
