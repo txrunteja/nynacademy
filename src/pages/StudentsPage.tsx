@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Search, Filter, Edit, Trash2 } from "lucide-react";
+import { Users, Plus, Search, Filter, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { createStudent, deleteStudent, getStudents, updateStudent } from "../api/students";
 import { getFaculty } from "../api/faculty";
 import { DataTable } from "../components/ui/DataTable";
@@ -11,6 +11,84 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import type { Student } from "../types/db";
 
 const initialForm = { name: "", phone: "", mode: "offline", assigned_faculty_id: "", subjects: "" };
+
+/* ── Subject colour palette ─────────────────────────────────── */
+const SUBJECT_COLORS = [
+  { bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.35)", text: "#3b82f6" },
+  { bg: "rgba(168,85,247,0.15)", border: "rgba(168,85,247,0.35)", text: "#a855f7" },
+  { bg: "rgba(236,72,153,0.15)", border: "rgba(236,72,153,0.35)", text: "#ec4899" },
+  { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.35)", text: "#f59e0b" },
+  { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.35)", text: "#10b981" },
+  { bg: "rgba(6,182,212,0.15)",   border: "rgba(6,182,212,0.35)",  text: "#06b6d4" },
+  { bg: "rgba(244,63,94,0.15)",   border: "rgba(244,63,94,0.35)",  text: "#f43f5e" },
+  { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.35)", text: "#6366f1" },
+];
+
+function subjectColor(subject: string) {
+  let hash = 0;
+  for (let i = 0; i < subject.length; i++) hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+  return SUBJECT_COLORS[Math.abs(hash) % SUBJECT_COLORS.length];
+}
+
+function SubjectTags({ subjects }: { subjects: string[] }) {
+  if (!subjects.length) return <span className="text-[var(--text-muted)]">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {subjects.map((s) => {
+        const c = subjectColor(s);
+        return (
+          <span
+            key={s}
+            className="subject-tag"
+            style={{ background: c.bg, borderColor: c.border, color: c.text }}
+          >
+            {s}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function getWhatsAppUrl(phone: string): string {
+  const cleaned = phone.replace(/\D/g, "");
+  const finalNumber = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+  return `https://wa.me/${finalNumber}`;
+}
+
+/* ── Phone cell with eye toggle & WhatsApp ──────────────────── */
+function PhoneCell({ phone }: { phone: string | null }) {
+  const [visible, setVisible] = useState(false);
+  if (!phone) return <span className="text-[var(--text-muted)]">—</span>;
+
+  const masked = phone.replace(/\d(?=\d{2})/g, "•");
+  const waUrl = getWhatsAppUrl(phone);
+
+  return (
+    <span className="phone-mask">
+      <span style={{ fontVariantNumeric: "tabular-nums" }}>{visible ? phone : masked}</span>
+      <button
+        type="button"
+        className="phone-mask-btn"
+        onClick={() => setVisible((v) => !v)}
+        title={visible ? "Hide phone" : "Show phone"}
+      >
+        {visible ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+      <a
+        href={waUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center justify-center w-6 h-6 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-md transition-colors"
+        title="Chat on WhatsApp"
+      >
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.713-1.458L0 24zm6.59-4.846c1.6.95 3.488 1.451 5.42 1.452 5.568 0 10.1-4.524 10.104-10.096C22.174 7.947 21.14 5.4 19.22 3.48c-1.92-1.92-4.467-2.973-7.213-2.974-5.57 0-10.103 4.526-10.107 10.1-.001 1.93.501 3.81 1.455 5.41l-.951 3.473 3.562-.935zm11.393-5.084c-.305-.153-1.805-.89-2.083-.99-.278-.102-.48-.153-.68.152-.2.304-.775.99-.95 1.193-.175.203-.35.228-.655.076-.305-.153-1.287-.475-2.45-1.514-.906-.809-1.517-1.809-1.695-2.114-.177-.305-.019-.47.133-.621.137-.136.305-.355.457-.533.153-.177.203-.304.305-.508.102-.203.05-.381-.025-.533-.076-.153-.68-1.638-.93-2.247-.244-.587-.492-.507-.68-.517-.174-.009-.374-.01-.572-.01-.2 0-.525.075-.8.374-.275.301-1.05 1.027-1.05 2.505s1.075 2.903 1.225 3.104c.15.203 2.115 3.23 5.123 4.527.715.309 1.274.494 1.71.633.718.228 1.37.196 1.885.12.574-.086 1.805-.738 2.057-1.453.253-.716.253-1.33.177-1.453-.075-.123-.277-.2-.582-.353z"/>
+        </svg>
+      </a>
+    </span>
+  );
+}
 
 export function StudentsPage() {
   const queryClient = useQueryClient();
@@ -65,7 +143,7 @@ export function StudentsPage() {
           <div className="font-medium text-[var(--text)]">{r.name}</div>
         ) 
       },
-      { key: "phone", title: "Phone", render: (r: Student) => r.phone || "—" },
+      { key: "phone", title: "Phone", render: (r: Student) => <PhoneCell phone={r.phone} /> },
       { 
         key: "mode", 
         title: "Mode", 
@@ -75,7 +153,7 @@ export function StudentsPage() {
           </span>
         ) 
       },
-      { key: "subjects", title: "Subjects", render: (r: Student) => r.subjects.join(", ") || "—" },
+      { key: "subjects", title: "Subjects", render: (r: Student) => <SubjectTags subjects={r.subjects} /> },
       {
         key: "actions",
         title: "",

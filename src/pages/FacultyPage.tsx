@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GraduationCap, Plus, Search, Edit, Trash2 } from "lucide-react";
+import { GraduationCap, Plus, Search, Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { createFaculty, deleteFaculty, facultyStats, getFaculty, updateFaculty } from "../api/faculty";
 import { DataTable } from "../components/ui/DataTable";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -10,6 +10,65 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import type { Faculty } from "../types/db";
 
 const emptyForm = { name: "", phone: "", subjects: "" };
+
+/* ── Subject colour palette ─────────────────────────────────── */
+const SUBJECT_COLORS = [
+  { bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.35)", text: "#3b82f6" },
+  { bg: "rgba(168,85,247,0.15)", border: "rgba(168,85,247,0.35)", text: "#a855f7" },
+  { bg: "rgba(236,72,153,0.15)", border: "rgba(236,72,153,0.35)", text: "#ec4899" },
+  { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.35)", text: "#f59e0b" },
+  { bg: "rgba(16,185,129,0.15)",  border: "rgba(16,185,129,0.35)", text: "#10b981" },
+  { bg: "rgba(6,182,212,0.15)",   border: "rgba(6,182,212,0.35)",  text: "#06b6d4" },
+  { bg: "rgba(244,63,94,0.15)",   border: "rgba(244,63,94,0.35)",  text: "#f43f5e" },
+  { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.35)", text: "#6366f1" },
+];
+
+function subjectColor(subject: string) {
+  let hash = 0;
+  for (let i = 0; i < subject.length; i++) hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+  return SUBJECT_COLORS[Math.abs(hash) % SUBJECT_COLORS.length];
+}
+
+function SubjectTags({ subjects }: { subjects: string[] }) {
+  if (!subjects.length) return <span className="text-[var(--text-muted)]">—</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {subjects.map((s) => {
+        const c = subjectColor(s);
+        return (
+          <span
+            key={s}
+            className="subject-tag"
+            style={{ background: c.bg, borderColor: c.border, color: c.text }}
+          >
+            {s}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Phone cell with eye toggle ─────────────────────────────── */
+function PhoneCell({ phone }: { phone: string | null }) {
+  const [visible, setVisible] = useState(false);
+  if (!phone) return <span className="text-[var(--text-muted)]">—</span>;
+
+  const masked = phone.replace(/\d(?=\d{2})/g, "•");
+  return (
+    <span className="phone-mask">
+      <span style={{ fontVariantNumeric: "tabular-nums" }}>{visible ? phone : masked}</span>
+      <button
+        type="button"
+        className="phone-mask-btn"
+        onClick={() => setVisible((v) => !v)}
+        title={visible ? "Hide phone" : "Show phone"}
+      >
+        {visible ? <EyeOff size={14} /> : <Eye size={14} />}
+      </button>
+    </span>
+  );
+}
 
 export function FacultyPage() {
   const queryClient = useQueryClient();
@@ -99,8 +158,8 @@ export function FacultyPage() {
                   <div className="font-medium text-[var(--text)]">{r.name}</div>
                 ) 
               },
-              { key: "phone", title: "Phone", render: (r: Faculty) => r.phone || "—" },
-              { key: "subjects", title: "Subjects", render: (r: Faculty) => r.subjects.join(", ") || "—" },
+              { key: "phone", title: "Phone", render: (r: Faculty) => <PhoneCell phone={r.phone} /> },
+              { key: "subjects", title: "Subjects", render: (r: Faculty) => <SubjectTags subjects={r.subjects} /> },
               { 
                 key: "today", 
                 title: "Classes Today", 

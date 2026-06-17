@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, differenceInMinutes } from "date-fns";
-import { CheckCircle2, XCircle, Clock, GraduationCap, MapPin } from "lucide-react";
-import { getTodaySchedules, markSchedule, updateSchedule } from "../../api/schedules";
+import { differenceInMinutes } from "date-fns";
+import { CheckCircle2, XCircle, Clock, GraduationCap, MapPin, Trash2 } from "lucide-react";
+import { getTodaySchedules, markSchedule, updateSchedule, deleteSchedule } from "../../api/schedules";
+import { formatInIST } from "../../lib/dateUtils";
 
 const statusBadge: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
   scheduled: { bg: "bg-blue-50 dark:bg-blue-900/30", text: "text-blue-700 dark:text-blue-400", icon: <Clock size={14} /> },
@@ -42,6 +43,8 @@ export function TodayScheduleWidget() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["today-schedules"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["schedule-week"] });
+      queryClient.invalidateQueries({ queryKey: ["past-schedules"] });
     },
   });
 
@@ -50,6 +53,18 @@ export function TodayScheduleWidget() {
       updateSchedule(scheduleId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["today-schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["schedule-week"] });
+      queryClient.invalidateQueries({ queryKey: ["past-schedules"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteSchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["today-schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["schedule-week"] });
+      queryClient.invalidateQueries({ queryKey: ["past-schedules"] });
     },
   });
 
@@ -73,7 +88,7 @@ export function TodayScheduleWidget() {
             Today's Schedule
           </h2>
           <span className="app-badge bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-            {format(new Date(), "MMM d, yyyy")}
+            {formatInIST(new Date(), "MMM d, yyyy")}
           </span>
         </div>
       </div>
@@ -96,7 +111,7 @@ export function TodayScheduleWidget() {
               return (
                 <div key={item.id} className="p-6 hover:bg-[var(--bg-muted)]/30 transition-colors group">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 w-full">
                       {/* Timeline indicator node */}
                       <div className="hidden md:flex flex-col items-center mt-1">
                         <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-white dark:bg-[#0f172a] z-10 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
@@ -116,7 +131,7 @@ export function TodayScheduleWidget() {
                         
                         <div className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
                           <Clock size={16} />
-                          {format(start, "h:mm a")} - {format(end, "h:mm a")}
+                          {formatInIST(start, "h:mm a")} - {formatInIST(end, "h:mm a")}
                           <span className="text-xs px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 ml-2">
                             {differenceInMinutes(end, start)} min
                           </span>
@@ -153,17 +168,30 @@ export function TodayScheduleWidget() {
                           <button
                             className="app-button-secondary !px-3 py-1.5 text-xs inline-flex items-center gap-1 disabled:opacity-50"
                             onClick={() => {
-                              const value = window.prompt("New start datetime (YYYY-MM-DDTHH:mm)", item.start_time?.slice(0, 16));
+                              const value = window.prompt("New start datetime (YYYY-MM-DDTHH:mm)", formatInIST(item.start_time, "yyyy-MM-dd'T'HH:mm"));
                               if (!value) return;
+                              // Store time with Asia/Kolkata timezone offset so it is stored correctly in Supabase
                               quickUpdate.mutate({
                                 scheduleId: item.id,
-                                payload: { start_time: value, status: "rescheduled", marked_at: new Date().toISOString() },
+                                payload: { start_time: `${value}+05:30`, status: "rescheduled", marked_at: new Date().toISOString() },
                               });
                             }}
                             disabled={quickUpdate.isPending}
                           >
                             <Clock size={14} />
                             Reschedule
+                          </button>
+                          <button
+                            className="app-button-danger !px-3 py-1.5 text-xs inline-flex items-center gap-1 disabled:opacity-50 bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to delete this schedule?")) {
+                                deleteMutation.mutate(item.id);
+                              }
+                            }}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 size={14} />
+                            Delete
                           </button>
                         </div>
                       </div>
